@@ -17,6 +17,7 @@ package config
 
 const UserAgent = "DevGuard"
 const PrettyJSONIndent = "    "
+const MaxJustificationLength = 4000
 
 var (
 	Version   string

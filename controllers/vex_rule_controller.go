@@ -22,6 +22,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/l3montree-dev/devguard/config"
 	"github.com/l3montree-dev/devguard/database/models"
 	"github.com/l3montree-dev/devguard/dtos"
 	"github.com/l3montree-dev/devguard/shared"
@@ -184,6 +185,9 @@ func (c *VEXRuleController) Create(ctx shared.Context) error {
 	if len(req.PathPattern) == 0 {
 		return echo.NewHTTPError(400, "pathPattern must contain at least one element")
 	}
+	if len([]rune(req.Justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
 
 	rule := &models.VEXRule{
 		AssetID:                 asset.ID,
@@ -279,6 +283,10 @@ func (c *VEXRuleController) Update(ctx shared.Context) error {
 	// Verify the rule belongs to this asset
 	if rule.AssetID != asset.ID {
 		return echo.NewHTTPError(403, "rule does not belong to this asset")
+	}
+
+	if len([]rune(req.Justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
 	}
 
 	// Update fields if provided

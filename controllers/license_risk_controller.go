@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/google/uuid"
+	"github.com/l3montree-dev/devguard/config"
 	"github.com/l3montree-dev/devguard/database/models"
 	"github.com/l3montree-dev/devguard/dtos"
 	"github.com/l3montree-dev/devguard/licenses"
@@ -168,6 +169,10 @@ func (controller LicenseRiskController) Mitigate(ctx shared.Context) error {
 		return echo.NewHTTPError(500, "could not bind the request to a justification")
 	}
 
+	if len([]rune(justification.Comment)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
+
 	licenseRiskID, _, err := shared.GetVulnID(ctx)
 	if err != nil {
 		return echo.NewHTTPError(400, "invalid licenseRisk id")
@@ -215,6 +220,9 @@ func (controller LicenseRiskController) CreateEvent(ctx shared.Context) error {
 		return echo.NewHTTPError(400, "invalid status type")
 	}
 	justification := status.Justification
+	if len([]rune(justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
 	mechanicalJustification := status.MechanicalJustification
 
 	event, err := controller.licenseRiskService.UpdateLicenseRiskState(ctx.Request().Context(), nil, userID, &licenseRisk, statusType, justification, mechanicalJustification)
@@ -243,6 +251,10 @@ func (controller LicenseRiskController) MakeFinalLicenseDecision(ctx shared.Cont
 	err := ctx.Bind(&licenseDecision)
 	if err != nil {
 		return echo.NewHTTPError(500, "could not bind the request to a licenseDecision")
+	}
+
+	if len([]rune(licenseDecision.Justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
 	}
 
 	vulnID, vulnType, err := shared.GetVulnID(ctx)

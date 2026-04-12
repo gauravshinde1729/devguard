@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 
+	"github.com/l3montree-dev/devguard/config"
 	"github.com/l3montree-dev/devguard/database/models"
 	"github.com/l3montree-dev/devguard/dtos"
 	"github.com/l3montree-dev/devguard/dtos/sarif"
@@ -116,6 +117,10 @@ func (c FirstPartyVulnController) Mitigate(ctx shared.Context) error {
 		return echo.NewHTTPError(400, "invalid payload").WithInternal(err)
 	}
 
+	if len([]rune(j.Justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
+
 	if err = thirdPartyIntegrations.HandleEvent(ctx.Request().Context(), shared.ManualMitigateEvent{
 		Justification: j.Justification,
 		Ctx:           ctx,
@@ -187,6 +192,9 @@ func (c FirstPartyVulnController) CreateEvent(ctx shared.Context) error {
 		return echo.NewHTTPError(400, "invalid status type")
 	}
 	justification := status.Justification
+	if len([]rune(justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
 
 	mechanicalJustification := status.MechanicalJustification
 
