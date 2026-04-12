@@ -9,6 +9,7 @@ import (
 
 	"go.opentelemetry.io/otel/trace"
 
+	"github.com/l3montree-dev/devguard/config"
 	"github.com/l3montree-dev/devguard/dtos"
 	"github.com/l3montree-dev/devguard/shared"
 	"github.com/l3montree-dev/devguard/statemachine"
@@ -223,6 +224,10 @@ func (controller DependencyVulnController) Mitigate(ctx shared.Context) error {
 		slog.Error("could not bind justification", "err", err)
 	}
 
+	if len([]rune(j.Comment)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
+
 	dependencyVulnID, _, err := shared.GetVulnID(ctx)
 	if err != nil {
 		return echo.NewHTTPError(400, "invalid dependencyVuln id")
@@ -397,6 +402,9 @@ func (controller DependencyVulnController) CreateEvent(ctx shared.Context) error
 		return echo.NewHTTPError(400, "invalid status type")
 	}
 	justification := status.Justification
+	if len([]rune(justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
+	}
 	mechanicalJustification := status.MechanicalJustification
 
 	ev, err := controller.dependencyVulnService.CreateVulnEventAndApply(ctx.Request().Context(), nil, asset.ID, userID, &dependencyVuln, dtos.VulnEventType(statusType), justification, mechanicalJustification, assetVersion.Name)
@@ -451,6 +459,9 @@ func (controller DependencyVulnController) BatchCreateEvent(ctx shared.Context) 
 	err = models.CheckStatusType(status.StatusType)
 	if err != nil {
 		return echo.NewHTTPError(400, "invalid status type")
+	}
+	if len([]rune(status.Justification)) > config.MaxJustificationLength {
+		return echo.NewHTTPError(400, "justification exceeds maximum length of 4000 characters")
 	}
 
 	eventType := dtos.VulnEventType(status.StatusType)
